@@ -2,6 +2,7 @@
 
 Ett modernt, asynkront verktyg som söker igenom en angiven webbplats och sparar ner alla undersidor som högkvalitativa PDF-filer samlade i ett ZIP-arkiv.
 
+STARTA direkt via https://webtopdf-62d4.onrender.com
 ---
 
 
@@ -50,9 +51,11 @@ node cli.js --url https://docs.astro.build --max-pages 20 --max-depth 2 --output
 
 ---
 
-##  Använd via GitHub Actions (Ingen lokal server krävs)
+##  4 Eller använd via GitHub Actions (Ingen lokal server krävs)
 
 1. Gå till fliken **Actions**
 2. Klicka på **Run Web to PDF Crawler** i vänstermenyn.
 3. Klicka på knappen **Run workflow**, mata in start-URL och önskat max antal sidor, och klicka på den gröna knappen.
 4. När workflowet är klart laddar du ner ZIP-filen direkt under **Artifacts** på sammanfattningssidan!
+
+##  Eller kör direkt via https://webtopdf-62d4.onrender.com

@@ -6,7 +6,7 @@ Ett modernt, asynkront verktyg som söker igenom en angiven webbplats och sparar
 
 
 
-## 🚀 Funktioner & Arkitektur
+##  Funktioner & Arkitektur
 
 1. **Playwright Chromium (Headless Browser):**
    * Emulerar skärmvisning (`emulateMedia({ media: 'screen' })`) så att webbplatser inte döljer menyer eller formatering genom felaktig print-CSS.
@@ -31,7 +31,7 @@ Ett modernt, asynkront verktyg som söker igenom en angiven webbplats och sparar
 
 ---
 
-## 🛠️ Kom igång lokalt´(ladda ner filerna till din lokala katalog)
+##  Kom igång lokalt´(ladda ner filerna till din lokala katalog)
 
 ### 1. Förutsättningar
 * Node.js v18+ installerat.
@@ -50,7 +50,7 @@ node cli.js --url https://docs.astro.build --max-pages 20 --max-depth 2 --output
 
 ---
 
-## ☁️ Använd via GitHub Actions (Ingen lokal server krävs)
+##  Använd via GitHub Actions (Ingen lokal server krävs)
 
 1. Gå till fliken **Actions**
 2. Klicka på **Run Web to PDF Crawler** i vänstermenyn.

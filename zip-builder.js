@@ -101,9 +101,13 @@ export async function createZipArchive(sourceDir, targetZipPath, pagesMetadata =
 
     archive.pipe(output);
 
-    // Lägg till alla filer i källkatalogen
-    archive.directory(sourceDir, false);
+    // Lägg till alla filer i källkatalogen, men exkludera .zip-filer för att undvika oändlig rekursion
+    archive.glob('**/*', {
+      cwd: sourceDir,
+      ignore: ['*.zip']
+    });
 
     archive.finalize();
   });
 }
+

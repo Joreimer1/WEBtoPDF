@@ -4,31 +4,7 @@ Ett modernt, asynkront verktyg som söker igenom en angiven webbplats och sparar
 
 ---
 
-## 💡 Svar om Backend & Cloudflare (Hur du undviker betallösningar)
 
-### Kan backend köras på Cloudflare Workers gratis?
-**Nej, tyvärr inte på gratisplanen.**  
-Orsaken är teknisk:
-* En headless webbläsare som Chromium (Playwright) kräver minst **500 MB RAM** och fullständig Linux-stöd för fontrendering och CSS-motor, samt att crawlningen tar flera minuter.
-* **Cloudflare Workers Free Tier** har en hård spärr på **128 MB RAM** och **10 ms CPU-tid**.
-* Cloudflare har visserligen *Workers Browser Rendering*, men det är en betaltjänst ($5/månad).
-
-### De två bästa och 100% gratis alternativen:
-
-1. **Frontend på GitHub Pages (eller Cloudflare Pages):**
-   * Gränssnittet i [`public/index.html`](file:///c:/WEBtoPDF/public/index.html) är helt statiskt (HTML + Tailwind CSS via CDN).
-   * Kan hostas **100% gratis** för evigt via **GitHub Pages** eller **Cloudflare Pages**.
-
-2. **Backend-alternativ utan kostnad:**
-   * **Alternativ A – Kör lokalt på din dator (Enklast & snabbast):**  
-     Kör `npm start`. Då körs Express-servern och Playwright direkt på din maskin med obegränsad RAM, full hastighet och realtidsuppdateringar via Server-Sent Events (SSE).
-   * **Alternativ B – GitHub Actions som Serverless Cloud Backend:**  
-     Alla GitHub-konton har **2 000 gratis minuter per månad** på Ubuntu-servrar med 7 GB RAM och 2 vCPU.  
-     Projektet inkluderar en färdig workflow-fil: [`.github/workflows/crawl.yml`](file:///c:/WEBtoPDF/.github/workflows/crawl.yml). Du klickar bara på *Actions* i ditt GitHub-repo, anger webbadressen, och GitHub laddar ner alla sidor och ger dig en färdig ZIP-fil att ladda ner!
-   * **Alternativ C – Render.com Free Tier (Molnserver):**  
-     Projektet inkluderar en färdig [`Dockerfile`](file:///c:/WEBtoPDF/Dockerfile) som du kan deploya gratis på t.ex. Render eller Koyeb.
-
----
 
 ## 🚀 Funktioner & Arkitektur
 
@@ -55,7 +31,7 @@ Orsaken är teknisk:
 
 ---
 
-## 🛠️ Kom igång lokalt
+## 🛠️ Kom igång lokalt´(ladda ner filerna till din lokala katalog)
 
 ### 1. Förutsättningar
 * Node.js v18+ installerat.
@@ -76,13 +52,7 @@ node cli.js --url https://docs.astro.build --max-pages 20 --max-depth 2 --output
 
 ## ☁️ Använd via GitHub Actions (Ingen lokal server krävs)
 
-1. Skapa ett nytt repository på ditt GitHub-konto.
-2. Pusha koden:
-   ```bash
-   git remote add origin https://github.com/<ditt-användarnamn>/<ditt-repo>.git
-   git push -u origin main
-   ```
-3. Gå till fliken **Actions** på ditt GitHub-repo.
-4. Klicka på **Run Web to PDF Crawler** i vänstermenyn.
-5. Klicka på knappen **Run workflow**, mata in start-URL och önskat max antal sidor, och klicka på den gröna knappen.
-6. När workflowet är klart laddar du ner ZIP-filen direkt under **Artifacts** på sammanfattningssidan!
+1. Gå till fliken **Actions**
+2. Klicka på **Run Web to PDF Crawler** i vänstermenyn.
+3. Klicka på knappen **Run workflow**, mata in start-URL och önskat max antal sidor, och klicka på den gröna knappen.
+4. När workflowet är klart laddar du ner ZIP-filen direkt under **Artifacts** på sammanfattningssidan!

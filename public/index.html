@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="sv" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebToPDF - Webbplatsscrawler till PDF</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .log-terminal {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+  </style>
+</head>
+<body class="h-full text-slate-800 antialiased flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-indigo-700 text-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-xl shadow-inner">
+          <i class="fa-solid fa-file-pdf text-red-300"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">WebToPDF Crawler</h1>
+          <p class="text-xs text-indigo-200">Sök igenom hela webbplatser och spara ner som PDF-arkiv</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-4">
+        <button id="guideBtn" class="text-xs bg-indigo-800 hover:bg-indigo-900 text-indigo-100 px-3 py-1.5 rounded-md border border-indigo-500/50 transition">
+          <i class="fa-solid fa-circle-question mr-1"></i> Hur körs backend? (Cloudflare / GitHub)
+        </button>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-100 border border-emerald-400/30">
+          <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          Playwright v1.50
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Huvudinnehåll -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+    <!-- Konfigurationssektion -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="p-6 border-b border-slate-100 bg-slate-50/50">
+        <h2 class="text-lg font-semibold text-slate-800 flex items-center">
+          <i class="fa-solid fa-spider mr-2 text-indigo-600"></i> Starta webbplatssökning
+        </h2>
+        <p class="text-sm text-slate-500 mt-0.5">Ange startadressen till sajten. Spindeln söker rekursivt inom samma domän och skapar A4-PDF med bevarad styling.</p>
+      </div>
+
+      <form id="crawlForm" class="p-6 space-y-6">
+        <div>
+          <label for="url" class="block text-sm font-medium text-slate-700 mb-1">Målwebbplats (Start-URL) <span class="text-red-500">*</span></label>
+          <div class="relative rounded-md shadow-sm">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <i class="fa-solid fa-globe"></i>
+            </div>
+            <input type="url" id="url" name="url" required placeholder="https://example.com" 
+              class="block w-full pl-10 pr-4 py-2.5 sm:text-sm border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 border shadow-sm">
+          </div>
+          <p class="text-xs text-slate-500 mt-1">Exempel: https://docs.astro.build eller https://sv.wikipedia.org/wiki/Portal:Huvudsida</p>
+        </div>
+
+        <!-- Inställningar i rutnät -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label for="maxPages" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Max antal sidor</label>
+            <input type="number" id="maxPages" name="maxPages" value="30" min="1" max="200" 
+              class="block w-full px-3 py-2 text-sm border-slate-300 rounded-md border focus:ring-indigo-500 focus:border-indigo-500">
+            <span class="text-[11px] text-slate-400">Skydd mot oändliga sajter (max 200)</span>
+          </div>
+
+          <div>
+            <label for="maxDepth" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Max länkdjup</label>
+            <input type="number" id="maxDepth" name="maxDepth" value="3" min="0" max="10" 
+              class="block w-full px-3 py-2 text-sm border-slate-300 rounded-md border focus:ring-indigo-500 focus:border-indigo-500">
+            <span class="text-[11px] text-slate-400">0 = endast start-URL, 3 = tre nivåer</span>
+          </div>
+
+          <div>
+            <label for="concurrency" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Parallella flikar</label>
+            <input type="number" id="concurrency" name="concurrency" value="2" min="1" max="4" 
+              class="block w-full px-3 py-2 text-sm border-slate-300 rounded-md border focus:ring-indigo-500 focus:border-indigo-500">
+            <span class="text-[11px] text-slate-400">Begränsar RAM-åtgång (1–4)</span>
+          </div>
+
+          <div>
+            <label for="delayMs" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Paus per anrop (ms)</label>
+            <input type="number" id="delayMs" name="delayMs" value="400" min="0" max="5000" step="100" 
+              class="block w-full px-3 py-2 text-sm border-slate-300 rounded-md border focus:ring-indigo-500 focus:border-indigo-500">
+            <span class="text-[11px] text-slate-400">Rate limiting så du ej blockeras</span>
+          </div>
+        </div>
+
+        <!-- Avancerade checkboxar -->
+        <div class="flex flex-wrap items-center gap-6 pt-2 text-sm">
+          <label class="inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="emulateScreen" name="emulateScreen" checked class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+            <span class="ml-2 text-slate-700">Emulera skärmvisning (undviker att print-CSS döljer innehåll)</span>
+          </label>
+          <label class="inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="allowSubdomains" name="allowSubdomains" class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4">
+            <span class="ml-2 text-slate-700">Tillåt subdomäner (t.ex. blog.domain.com)</span>
+          </label>
+        </div>
+
+        <!-- Startknapp och åtgärder -->
+        <div class="flex items-center justify-between pt-4 border-t border-slate-100">
+          <div class="text-xs text-slate-500 flex items-center">
+            <i class="fa-solid fa-shield-halved mr-1 text-slate-400"></i> Domänspärr och dupliceringsskydd aktivt
+          </div>
+          <div class="flex items-center space-x-3">
+            <button type="button" id="stopBtn" disabled class="hidden px-4 py-2 text-sm font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition">
+              <i class="fa-solid fa-stop mr-1.5"></i> Avbryt jobb
+            </button>
+            <button type="submit" id="startBtn" class="px-6 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition flex items-center">
+              <i class="fa-solid fa-play mr-2"></i> Starta hämtning till PDF
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Live Status & Progress (visas när körning pågår eller är klar) -->
+    <div id="progressSection" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div class="flex items-center space-x-2">
+            <span id="statusBadge" class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-100 text-blue-800">
+              <i class="fa-solid fa-circle-notch fa-spin mr-1.5"></i> Körs...
+            </span>
+            <span id="targetDisplay" class="text-sm font-medium text-slate-700 truncate max-w-md"></span>
+          </div>
+        </div>
+
+        <!-- Nedladdningsknapp -->
+        <div id="downloadContainer" class="hidden">
+          <a id="downloadZipBtn" href="#" class="inline-flex items-center px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg shadow-sm transition animate-bounce">
+            <i class="fa-solid fa-file-zipper mr-2 text-lg"></i> Ladda ner alla PDF:er (.ZIP)
+          </a>
+        </div>
+      </div>
+
+      <!-- Framstegsmätare -->
+      <div class="space-y-1.5">
+        <div class="flex justify-between text-xs font-medium text-slate-600">
+          <span id="progressText">0 av 0 sidor sparade</span>
+          <span id="queueText">Kö: 0 sidor</span>
+          <span id="percentText">0%</span>
+        </div>
+        <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200">
+          <div id="progressBar" class="bg-indigo-600 h-full rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delad sektion: Sparade PDF:er och Terminal-loggar -->
+    <div id="resultsSection" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- Tabell med sparade sidor (7 kolumner) -->
+      <div class="lg:col-span-7 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col h-[520px]">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="font-semibold text-slate-800 text-sm flex items-center">
+            <i class="fa-solid fa-list-check mr-2 text-indigo-600"></i> Sparade PDF:er (<span id="savedCount">0</span>)
+          </h3>
+          <span class="text-xs text-slate-400">Klicka på en fil för att granska</span>
+        </div>
+        <div class="flex-1 overflow-y-auto p-2">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-100 sticky top-0">
+              <tr>
+                <th class="py-2 px-2.5 w-10">#</th>
+                <th class="py-2 px-2.5">Titel / Filnamn</th>
+                <th class="py-2 px-2.5 w-20 text-right">Storlek</th>
+                <th class="py-2 px-2.5 w-16 text-center">Åtgärd</th>
+              </tr>
+            </thead>
+            <tbody id="pagesTableBody" class="divide-y divide-slate-100 text-slate-700">
+              <!-- Fylls på dynamiskt -->
+            </tbody>
+          </table>
+          <div id="emptyTableNotice" class="text-center py-16 text-slate-400 text-xs">
+            Inga sidor sparade ännu. De dyker upp här i realtid.
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Terminal / Konsol (5 kolumner) -->
+      <div class="lg:col-span-5 bg-slate-900 rounded-xl shadow-sm border border-slate-800 flex flex-col h-[520px] text-slate-300 overflow-hidden">
+        <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between text-xs">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+            <span class="font-mono text-slate-400 ml-2">crawler.log</span>
+          </div>
+          <button id="clearLogsBtn" class="text-slate-400 hover:text-white transition">Rensa</button>
+        </div>
+        <div id="terminalBody" class="log-terminal flex-1 overflow-y-auto p-4 text-[11px] leading-relaxed space-y-1 select-text">
+          <div class="text-slate-500">// Välkommen till WebToPDF Crawler. Loggmeddelanden syns här.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Arkitektur & Cloudflare / GitHub FAQ Modal / Infobox -->
+    <div id="guideModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b pb-3">
+          <h3 class="text-lg font-bold text-slate-800 flex items-center">
+            <i class="fa-solid fa-server mr-2 text-indigo-600"></i> Backend-val: Cloudflare vs GitHub Actions
+          </h3>
+          <button id="closeGuideBtn" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+        </div>
+        
+        <div class="space-y-3 text-sm text-slate-600 leading-relaxed">
+          <div class="p-3 bg-amber-50 border-l-4 border-amber-500 rounded-r text-amber-900 text-xs">
+            <strong>Viktigt om Cloudflare Workers:</strong> Cloudflare Workers gratis-tier tillåter endast 128 MB RAM och max 10ms CPU. En riktig webbläsarmotor (som Chromium/Playwright) kräver minst ~500 MB RAM och 30–60 sekunder körtid. Cloudflare har en betallösning (<em>Workers Browser Rendering</em>), men den kostar från $5/månad.
+          </div>
+
+          <h4 class="font-semibold text-slate-800">Hur kör du backend 100% gratis utan betallösningar?</h4>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div class="border rounded-lg p-3 bg-slate-50">
+              <strong class="text-indigo-600 block mb-1">Alternativ 1: Lokalt på din dator</strong>
+              Kör bara <code>npm start</code> i projektmappen. Då snurrar Express + Playwright lokalt och har direkt tillgång till Chromium, obegränsad RAM och nätverk. Snabbast och enklast!
+            </div>
+            <div class="border rounded-lg p-3 bg-slate-50">
+              <strong class="text-indigo-600 block mb-1">Alternativ 2: GitHub Actions (Serverless Cloud)</strong>
+              GitHub ger alla <strong>2000 gratis minuter per månad</strong> på kraftfulla Ubuntu-servrar (7 GB RAM) med Playwright installerat. Du kan trigga crawlen direkt från ett GitHub Actions-workflow och ladda ner ZIP-filen därifrån!
+            </div>
+          </div>
+
+          <p class="text-xs text-slate-500">
+            Frontend-koden (den här sidan) kan du ladda upp direkt till ett GitHub-repository och aktivera <strong>GitHub Pages</strong> helt gratis.
+          </p>
+        </div>
+
+        <div class="text-right pt-2 border-t">
+          <button id="closeGuideBtn2" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">Jag förstår</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
+    WebToPDF Engine &bull; Drivs av Playwright &bull; Byggd med Node.js &amp; Tailwind CSS
+  </footer>
+
+  <script>
+    // State
+    let currentJobId = null;
+    let eventSource = null;
+
+    // DOM-element
+    const crawlForm = document.getElementById('crawlForm');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const progressSection = document.getElementById('progressSection');
+    const resultsSection = document.getElementById('resultsSection');
+    const statusBadge = document.getElementById('statusBadge');
+    const targetDisplay = document.getElementById('targetDisplay');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const queueText = document.getElementById('queueText');
+    const percentText = document.getElementById('percentText');
+    const downloadContainer = document.getElementById('downloadContainer');
+    const downloadZipBtn = document.getElementById('downloadZipBtn');
+    const terminalBody = document.getElementById('terminalBody');
+    const clearLogsBtn = document.getElementById('clearLogsBtn');
+    const pagesTableBody = document.getElementById('pagesTableBody');
+    const savedCount = document.getElementById('savedCount');
+    const emptyTableNotice = document.getElementById('emptyTableNotice');
+
+    // Guide Modal
+    const guideBtn = document.getElementById('guideBtn');
+    const guideModal = document.getElementById('guideModal');
+    const closeGuideBtn = document.getElementById('closeGuideBtn');
+    const closeGuideBtn2 = document.getElementById('closeGuideBtn2');
+
+    guideBtn.addEventListener('click', () => guideModal.classList.remove('hidden'));
+    closeGuideBtn.addEventListener('click', () => guideModal.classList.add('hidden'));
+    closeGuideBtn2.addEventListener('click', () => guideModal.classList.add('hidden'));
+
+    clearLogsBtn.addEventListener('click', () => {
+      terminalBody.innerHTML = '';
+    });
+
+    function appendLog(level, message, timestamp) {
+      const line = document.createElement('div');
+      const timeStr = timestamp ? new Date(timestamp).toLocaleTimeString('sv-SE') : new Date().toLocaleTimeString('sv-SE');
+      
+      let colorClass = 'text-slate-300';
+      if (level === 'warn') colorClass = 'text-amber-400';
+      else if (level === 'error') colorClass = 'text-rose-400';
+      else if (message.includes('✓ Sparad')) colorClass = 'text-emerald-400 font-medium';
+
+      line.className = `${colorClass} break-all`;
+      line.innerHTML = `<span class="text-slate-500 select-none">[${timeStr}]</span> ${escapeHtml(message)}`;
+      terminalBody.appendChild(line);
+      terminalBody.scrollTop = terminalBody.scrollHeight;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function addPageToTable(page) {
+      emptyTableNotice.classList.add('hidden');
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-slate-50 transition border-b border-slate-100';
+      tr.innerHTML = `
+        <td class="py-2.5 px-2.5 font-medium text-slate-400">${page.index}</td>
+        <td class="py-2.5 px-2.5">
+          <div class="font-medium text-slate-800 truncate max-w-xs sm:max-w-sm" title="${escapeHtml(page.title || '')}">${escapeHtml(page.title || 'Utan titel')}</div>
+          <div class="text-[11px] text-slate-400 truncate max-w-xs sm:max-w-sm font-mono">${escapeHtml(page.url)}</div>
+        </td>
+        <td class="py-2.5 px-2.5 text-right font-mono text-slate-500">${page.fileSizeKb} KB</td>
+        <td class="py-2.5 px-2.5 text-center">
+          <a href="/api/jobs/${currentJobId}/file/${encodeURIComponent(page.filename)}" target="_blank" 
+             class="inline-flex items-center text-indigo-600 hover:text-indigo-800 p-1 rounded hover:bg-indigo-50" title="Öppna PDF">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          </a>
+        </td>
+      `;
+      pagesTableBody.appendChild(tr);
+      savedCount.textContent = pagesTableBody.children.length;
+    }
+
+    // Formulär submission
+    crawlForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const url = document.getElementById('url').value.trim();
+      const maxPages = parseInt(document.getElementById('maxPages').value, 10);
+      const maxDepth = parseInt(document.getElementById('maxDepth').value, 10);
+      const concurrency = parseInt(document.getElementById('concurrency').value, 10);
+      const delayMs = parseInt(document.getElementById('delayMs').value, 10);
+      const emulateScreen = document.getElementById('emulateScreen').checked;
+      const allowSubdomains = document.getElementById('allowSubdomains').checked;
+
+      // Nollställ UI
+      pagesTableBody.innerHTML = '';
+      savedCount.textContent = '0';
+      emptyTableNotice.classList.remove('hidden');
+      downloadContainer.classList.add('hidden');
+      terminalBody.innerHTML = '';
+
+      progressSection.classList.remove('hidden');
+      resultsSection.classList.remove('hidden');
+      targetDisplay.textContent = url;
+
+      startBtn.disabled = true;
+      startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      stopBtn.disabled = false;
+      stopBtn.classList.remove('hidden');
+
+      statusBadge.className = 'inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-100 text-blue-800';
+      statusBadge.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-1.5"></i> Startar...';
+
+      try {
+        const response = await fetch('/api/crawl', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url,
+            maxPages,
+            maxDepth,
+            concurrency,
+            delayMs,
+            emulateScreen,
+            allowSubdomains
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || 'Kunde inte starta crawlen');
+        }
+
+        const data = await response.json();
+        currentJobId = data.jobId;
+        connectEventSource(currentJobId);
+
+      } catch (err) {
+        appendLog('error', 'Fel: ' + err.message);
+        statusBadge.className = 'inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-100 text-rose-800';
+        statusBadge.textContent = 'Fel';
+        startBtn.disabled = false;
+        startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        stopBtn.classList.add('hidden');
+      }
+    });
+
+    // Anslut till Server-Sent Events (SSE)
+    function connectEventSource(jobId) {
+      if (eventSource) {
+        eventSource.close();
+      }
+
+      eventSource = new EventSource(`/api/jobs/${jobId}/events`);
+
+      eventSource.addEventListener('log', (e) => {
+        const logData = JSON.parse(e.data);
+        appendLog(logData.level, logData.message, logData.timestamp);
+      });
+
+      eventSource.addEventListener('progress', (e) => {
+        const p = JSON.parse(e.data);
+        progressBar.style.width = `${p.percent}%`;
+        progressText.textContent = `${p.processedCount} av ${p.maxPages} sidor sparade`;
+        queueText.textContent = `I kö: ${p.queuedCount}`;
+        percentText.textContent = `${p.percent}%`;
+      });
+
+      eventSource.addEventListener('page_saved', (e) => {
+        const page = JSON.parse(e.data);
+        addPageToTable(page);
+      });
+
+      eventSource.addEventListener('status', (e) => {
+        const s = JSON.parse(e.data);
+        if (s.status === 'running') {
+          statusBadge.className = 'inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-100 text-amber-800';
+          statusBadge.innerHTML = '<i class="fa-solid fa-spider mr-1.5 animate-pulse"></i> Crawlar sidor...';
+        }
+      });
+
+      eventSource.addEventListener('completed', (e) => {
+        const comp = JSON.parse(e.data);
+        statusBadge.className = 'inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-100 text-emerald-800';
+        statusBadge.innerHTML = '<i class="fa-solid fa-check mr-1.5"></i> Slutförd!';
+        
+        downloadZipBtn.href = comp.downloadUrl;
+        downloadContainer.classList.remove('hidden');
+
+        progressBar.style.width = '100%';
+        percentText.textContent = '100%';
+
+        finishJob();
+      });
+
+      eventSource.addEventListener('failed', (e) => {
+        const f = JSON.parse(e.data);
+        statusBadge.className = 'inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-100 text-rose-800';
+        statusBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Misslyckades';
+        appendLog('error', 'Jobbet misslyckades: ' + (f.error || 'Okänt fel'));
+        finishJob();
+      });
+
+      eventSource.onerror = () => {
+        // Om anslutningen bryts
+      };
+    }
+
+    function finishJob() {
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
+      startBtn.disabled = false;
+      startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      stopBtn.classList.add('hidden');
+    }
+
+    // Avbryt-knapp
+    stopBtn.addEventListener('click', async () => {
+      if (!currentJobId) return;
+      stopBtn.disabled = true;
+      try {
+        await fetch(`/api/jobs/${currentJobId}/stop`, { method: 'POST' });
+        appendLog('warn', 'Skickade begäran om att avbryta jobbet...');
+      } catch (err) {
+        appendLog('error', 'Kunde inte avbryta: ' + err.message);
+      }
+    });
+  </script>
+</body>
+</html>

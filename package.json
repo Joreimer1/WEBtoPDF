@@ -1,0 +1,27 @@
+{
+  "name": "web-to-pdf-crawler",
+  "version": "1.0.0",
+  "description": "Crawl en hel webbplats och spara alla sidor som högkvalitativa PDF:er i en ZIP-fil",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "install-browsers": "npx playwright install chromium"
+  },
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "playwright": "^1.50.0"
+  },
+  "keywords": [
+    "crawler",
+    "pdf",
+    "playwright",
+    "headless-chrome",
+    "web-to-pdf"
+  ],
+  "author": "",
+  "license": "MIT"
+}

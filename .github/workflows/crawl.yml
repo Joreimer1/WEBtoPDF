@@ -1,0 +1,57 @@
+name: Run Web to PDF Crawler
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Målwebbplats (Start-URL)'
+        required: true
+        default: 'https://example.com'
+      max_pages:
+        description: 'Maximalt antal sidor'
+        required: false
+        default: '30'
+      max_depth:
+        description: 'Maximalt länkdjup (0 = endast start-URL)'
+        required: false
+        default: '3'
+      concurrency:
+        description: 'Parallella flikar (1-3)'
+        required: false
+        default: '2'
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Crawler CLI
+        run: |
+          node cli.js \
+            --url "${{ github.event.inputs.url }}" \
+            --max-pages ${{ github.event.inputs.max_pages }} \
+            --max-depth ${{ github.event.inputs.max_depth }} \
+            --concurrency ${{ github.event.inputs.concurrency }} \
+            --output "./output"
+
+      - name: Upload PDF Archive Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-pdf-archive
+          path: ./output/all_pages.zip
+          retention-days: 7
